@@ -177,10 +177,10 @@ def analyzeFolder(root, output):
 			#write colony counts to the output file
 			output.write(f + ' colonies: ' + str(count) + '\n')
 			#Write the average colony size and standard deviation to the output file
-			output.write(f + ' average colony size and standard deviation (um^2):, ' + str('%.2f' %avg_area) + ', ' + str('%.2f' %st_dev) + '\n')
+			output.write(f + ' average colony size and standard deviation (um^2):,' + str('%.2f' %avg_area) + ', ' + str('%.2f' %st_dev) + '\n')
 			#Write the acutal list of colony sizes
 			#",".join(str etc... removes the brackets usually seen when printing out lists in python for easy graphing
-			output.write(f + ' individual colony size (in no particular order): ,' + ",".join(str(c) for c in colonies) + '\n')
+			output.write(f + ' individual colony size (in no particular order):,' + ",".join(str(c) for c in colonies) + '\n')
 			folderCount = folderCount + count #Add each file's count to the folder overall count
 	
 	#write out the output
