@@ -72,11 +72,9 @@ def contour_finding(thresh_img, img):
 	#produces the array of contours for the image
 	image, contours, __ = cv2.findContours(thresh_img_2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)	
 	
-	#creates a drawn on image for quality control
-	cv2.drawContours(img,contours, -1, (255,255,0), 3)
-	
 	#initialize an empty list to hold the colony sizes
 	colonies = [None]*len(contours)
+	selected = [None]*len(contours)
 	
 	#iterate through the contours and determine the area of each
 	for c in range(len(contours)):
@@ -90,11 +88,18 @@ def contour_finding(thresh_img, img):
 			shape_count = shape_count+1
 			sum_area = sum_area + area
 			colonies[c] = area
+			selected[c] = contours[c]
 			
 	#remove Nones in the colonies (where colony size was too small)
 	colonies = filter(None, colonies)
+
+	#creates a drawn on image for quality control
+	cv2.drawContours(img, selected, -1, (255,255,0), 3)
 	
-	#calculate average area and convert from pixels^2 to um^2
+	#draw the smallest size colony as a perfect circle
+	minSizeRadius = int(math.sqrt(COLONY_MIN_SIZE/math.pi))
+	cv2.circle(img, (minSizeRadius, minSizeRadius), minSizeRadius, (255,255,255), 3)
+	#calculate avg_area 
 	avg_area = 0
 	if shape_count > 0:	
 		avg_area = sum_area/shape_count	
