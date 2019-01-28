@@ -25,6 +25,11 @@ COLONY_MIN_SIZE = 172
 #pixel to um scale - assuming a 4x image on the Nikon
 #each pixel is 2.39um
 SCALE = 2.39
+
+#pixel to um scale - assuming a 10x image on the Nikon
+#each pixel is 3.38um
+#SCALD = 3.38
+
 def gradient_correction(img):
 	#defining variables
 	c_value = 128 #value to correct to to make a neutral image for QC
