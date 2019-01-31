@@ -81,7 +81,7 @@ def contour_finding(thresh_img, img):
 	
 	#initialize an empty list to hold the colony sizes
 	colonies = [None]*len(contours)
-	selected = [None]*len(contours)
+	selected = [None]*len(contours)#numpy.empty(2)
 	
 	#iterate through the contours and determine the area of each
 	for c in range(len(contours)):
@@ -100,8 +100,18 @@ def contour_finding(thresh_img, img):
 	#remove Nones in the colonies (where colony size was too small)
 	colonies = filter(None, colonies)
 
-	#creates a drawn on image for quality control
-	cv2.drawContours(img, selected, -1, (255,255,0), 3)
+	#get a list of indices which contain Nones
+	indices = []
+	for i in range(len(selected)):
+		if numpy.array_equal(selected[i], None):
+			indices.append(i)
+
+	#remove the Nones from selected
+	selected = numpy.delete(selected, indices, 0)
+
+	#draws the selected colonies
+	if len(selected) != 0:
+		cv2.drawContours(img, selected, -1, (255,255,0), 3)
 	
 	#draw the smallest size colony as a perfect circle
 	minSizeRadius = int(math.sqrt(COLONY_MIN_SIZE/math.pi))
