@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 #Defines how much darker a pixel needs to be to be considered significantly dark
 #Smaller number = more selective (more false negatives)
 #Larger number = more sensitive (more false positives)
-SIG_THRESH_MULT = 0.7
+SIG_THRESH_MULT = 0.3
 
 #gradient resolution - multiplier to determine the gradient image size
 #use a smaller number to avoid labeling colonies as background
@@ -24,7 +24,7 @@ RESIZE_X = 1500
 RESIZE_Y = 1000
 
 #the smallest area (in um^2) that a colony has to be to be counted
-COLONY_MIN_SIZE = 750
+COLONY_MIN_SIZE = 6000
 #pixel to um scale - assuming a 4x image on the Nikon
 #each pixel is 2.39um
 #SCALE = 2.39
@@ -82,9 +82,11 @@ def contour_finding(thresh_img, img, shortName, root):
 	
 	#subtract the two images to add the canny detected edges to contours
 	thresh_img = cv2.add(thresh_img, edges)
+	#cv2.imshow('thresh_img',thresh_img)
+	#cv2.waitKey()
 
 	#produces the array of contours for the image
-	image, contours, __ = cv2.findContours(thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)	
+	contours, heirarchy = cv2.findContours(thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)	
 
 	#initialize an empty list to hold the colony sizes
 	colonies = [None]*len(contours)
@@ -105,7 +107,7 @@ def contour_finding(thresh_img, img, shortName, root):
 			selected[c] = contours[c]
 			
 	#remove Nones in the colonies (where colony size was too small)
-	colonies = filter(None, colonies)
+	colonies = list(filter(None, colonies))
 
 	#get a list of indices which contain Nones
 	indices = []
@@ -202,14 +204,15 @@ def analyzeFolder(root, output):
 			
 			#analyze image
 			count, avg_area, colonies = analyzeImg(img,root,fullF,f) 
+
 			st_dev = numpy.std(colonies)
 			#write colony counts to the output file
-			output.write(f + ' colonies: ' + str(count) + '\n')
+			output.write(f + ' colonies:, ' + str(count) + '\n')
 			#Write the average colony size and standard deviation to the output file
-			output.write(f + ' average colony size and standard deviation (um^2): ,' + str('%.2f' %avg_area) + ',' + str('%.2f' %st_dev) + '\n')
+			output.write(f + ' average colony size and standard deviation (um^2):, ' + str('%.2f' %avg_area) + ',' + str('%.2f' %st_dev) + '\n')
 			#Write the acutal list of colony sizes
 			#",".join(str etc... removes the brackets usually seen when printing out lists in python for easy graphing
-			output.write(f + ' individual colony size (in no particular order): ,' + ",".join(str(c) for c in colonies) + '\n')
+			output.write(f + ' individual colony size (in no particular order):,' + ",".join(str(c) for c in colonies) + '\n')
 			folderCount = folderCount + count #Add each file's count to the folder overall count
 	
 	#write out the output
