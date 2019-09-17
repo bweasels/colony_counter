@@ -207,7 +207,7 @@ def analyzeFolder(root, output):
 
 			st_dev = numpy.std(colonies)
 			#write colony counts to the output file
-			output.write(f + ' colonies:, ' + str(count) + '\n')
+			output.write(f + ' colonies:,' + str(count) + '\n')
 			#Write the average colony size and standard deviation to the output file
 			output.write(f + ' average colony size and standard deviation (um^2):, ' + str('%.2f' %avg_area) + ',' + str('%.2f' %st_dev) + '\n')
 			#Write the acutal list of colony sizes
@@ -216,7 +216,7 @@ def analyzeFolder(root, output):
 			folderCount = folderCount + count #Add each file's count to the folder overall count
 	
 	#write out the output
-	output.write('Total folder count: ' + str(folderCount) + '\n\n')
+	output.write('Total folder count:' + str(folderCount) + '\n\n')
 
 	return(folderCount)
 
