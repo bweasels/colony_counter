@@ -3,46 +3,46 @@ import os
 import gc
 import numpy
 
-#Defines how much darker a pixel needs to be to be considered significantly dark
-#Smaller number = more selective (more false negatives)
-#Larger number = more sensitive (more false positives)
+# Defines how much darker a pixel needs to be to be considered significantly dark
+# Smaller number = more selective (more false negatives)
+# Larger number = more sensitive (more false positives)
 SIG_THRESH_MULT = 0.5
 
-#gradient resolution - multiplier to determine the gradient image size
-#use a smaller number to avoid labeling colonies as background
-#use a larger number to more accurately match a gradient
+# gradient resolution - multiplier to determine the gradient image size
+# use a smaller number to avoid labeling colonies as background
+# use a larger number to more accurately match a gradient
 G_RES = 0.03
 
-#X and Y dimensions of the shrunk and analyzed image
-#Larger dimensions will make for a slower, more accurate analysis
-#Smaller images may miss small colonies, but will be significantly faster
+# X and Y dimensions of the shrunk and analyzed image
+# Larger dimensions will make for a slower, more accurate analysis
+# Smaller images may miss small colonies, but will be significantly faster
 RESIZE_X = 1500
 RESIZE_Y = 1000
 
-#the smallest area (in um^2) that a colony has to be to be counted
+# the smallest area (in um^2) that a colony has to be to be counted
 COLONY_MIN_SIZE = 172
 
-#pixel to um scale - assuming a 4x image on the Nikon
-#each pixel is 2.39um
+# pixel to um scale - assuming a 4x image on the Nikon
+# each pixel is 2.39um
 SCALE = 2.39
 
-#pixel to um scale - assuming a 10x image on the Nikon
-#each pixel is 3.38um
-#SCALD = 3.38
+# pixel to um scale - assuming a 10x image on the Nikon
+# each pixel is 3.38um
+# SCALE = 3.38
 
 def gradient_correction(img):
-	#defining variables
-	c_value = 128 #value to correct to to make a neutral image for QC
+	# defining variables
+	c_value = 128  # value to correct to to make a neutral image for QC
 	c_map = []
 	
-	#Shrink and apply median blur to make a gradient image (g_img)
+	# Shrink and apply median blur to make a gradient image (g_img)
 	g_img = cv2.resize(img, None, fx=G_RES, fy=G_RES, interpolation = cv2.INTER_AREA)
 	g_img = cv2.medianBlur(g_img,7)
 
-	#only care about the first two values, height and width
+	# only care about the first two values, height and width
 	height, width = g_img.shape[:2]
 
-	#make the correction map, a map of each pixel's deviation from the average
+	# make the correction map, a map of each pixel's deviation from the average
 	for col in range(height):
 		c_map.append([])
 		for row in range(width):
@@ -50,15 +50,15 @@ def gradient_correction(img):
 	
 	big_height, big_width = img.shape[:2]
 
-	#apply the correction map to the corresponding pixel in the full sized image
+	# apply the correction map to the corresponding pixel in the full sized image
 	for col in range(big_height):
 		for row in range(big_width):
-			c_col = int(col*G_RES)
-			c_row = int(row*G_RES)
-			sig_thresh = g_img[c_col][c_row]*SIG_THRESH_MULT
-			if img[col][row] > sig_thresh: #reverse the < to undo comments
-				img[col][row] = 0				
-			else: #Set colonies to 0 for circle detect
+			c_col = int(col * G_RES)
+			c_row = int(row * G_RES)
+			sig_thresh = g_img[c_col][c_row] * SIG_THRESH_MULT
+			if img[col][row] > sig_thresh:  # reverse the < to undo comments
+				img[col][row] = 0
+			else:  # Set colonies to 0 for circle detect
 				img[col][row] = 255
 
 	del g_img
@@ -94,27 +94,27 @@ def contour_finding(thresh_img, img):
 			sum_area = sum_area + area
 			colonies[c] = area
 			selected[c] = contours[c]
-			
-	#remove Nones in the colonies (where colony size was too small)
+
+	# remove Nones in the colonies (where colony size was too small)
 	colonies = filter(None, colonies)
 
-	#get a list of indices which contain Nones
+	# get a list of indices which contain Nones
 	indices = []
 	for i in range(len(selected)):
 		if numpy.array_equal(selected[i], None):
 			indices.append(i)
 
-	#remove the Nones from selected
+	# remove the Nones from selected
 	selected = numpy.delete(selected, indices, 0)
 
-	#draws the selected colonies
+	# draws the selected colonies
 	if len(selected) != 0:
 		cv2.drawContours(img, selected, -1, (255,255,0), 3)
 	
-	#draw the smallest size colony as a perfect circle
+	# draw the smallest size colony as a perfect circle
 	minSizeRadius = int(math.sqrt(COLONY_MIN_SIZE/math.pi))
 	cv2.circle(img, (minSizeRadius, minSizeRadius), minSizeRadius, (255,255,255), 3)
-	#calculate avg_area 
+	# calculate avg_area
 	avg_area = 0
 	if shape_count > 0:	
 		avg_area = sum_area/shape_count	
@@ -125,7 +125,7 @@ def contour_finding(thresh_img, img):
 	
 	return(img, shape_count, avg_area, colonies)
 	
-def analyzeImg(img, root, fileName, shortName):
+def analyzeImgStained(img, root, fileName, shortName):
 	#Shrink the image to a not-too-large, not-too-small size
 	s_img = cv2.resize(img, (RESIZE_X, RESIZE_Y))
 	print('Shrunk Image')
@@ -167,30 +167,29 @@ def analyzeFolder(root, output):
 		os.makedirs(QCPath)
 		print('Made QC folder.')
 
-	count = 0 #number of colonies in the image
-	folderCount = 0 #total number of colonies in this folder
+	count = 0  # number of colonies in the image
+	folderCount = 0  # total number of colonies in this folder
 
-	#iterate through the files in the folder and analyze
+	# iterate through the files in the folder and analyze
 	fileList = os.listdir(root)
 	for f in fileList:
 		fullF = os.path.join(root, f)
 		if f.endswith(".jpg"):
-
-			#open the image
+			# open the image
 			img = cv2.imread(fullF, 0) 
 			print('Loaded %s' %f)
-			
-			#analyze image
+
+			# analyze image
 			count, avg_area, colonies = analyzeImg(img,root,fullF,f) 
 			st_dev = numpy.std(colonies)
-			#write colony counts to the output file
+			# write colony counts to the output file
 			output.write(f + ' colonies: ' + str(count) + '\n')
-			#Write the average colony size and standard deviation to the output file
+			# Write the average colony size and standard deviation to the output file
 			output.write(f + ' average colony size and standard deviation: ' + str('%.2f' %avg_area) + ' um^2,' + str('%.2f' %st_dev) + ' um^2\n')
-			#Write the acutal list of colony sizes
+			# Write the acutal list of colony sizes
 			output.write(f + ' individual colony size (in no particular order): ,' + str(colonies) + '\n')
-			folderCount = folderCount + count #Add each file's count to the folder overall count
-	
+			folderCount = folderCount + count # Add each file's count to the folder overall count
+
 	#write out the output
 	output.write('Total folder count: ' + str(folderCount) + '\n\n')
 

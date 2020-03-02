@@ -4,6 +4,8 @@ import gc
 import numpy
 import math
 import matplotlib
+import sys
+from optparse import OptionParser
 
 matplotlib.use('QT4Agg')
 import matplotlib.pyplot as plt
@@ -11,7 +13,7 @@ import matplotlib.pyplot as plt
 # Defines how much darker a pixel needs to be to be considered significantly dark
 # Smaller number = more selective (more false negatives)
 # Larger number = more sensitive (more false positives)
-SIG_THRESH_MULT = 0.3
+SIG_THRESH_MULT = 0.4
 
 # gradient resolution - multiplier to determine the gradient image size
 # use a smaller number to avoid labeling colonies as background
@@ -25,7 +27,7 @@ RESIZE_X = 1500
 RESIZE_Y = 1000
 
 # the smallest area (in um^2) that a colony has to be to be counted
-COLONY_MIN_SIZE = 6000
+COLONY_MIN_SIZE = 2500
 # pixel to um scale - assuming a 4x image on the Nikon
 # each pixel is 2.39um
 # SCALE = 2.39
@@ -34,6 +36,10 @@ COLONY_MIN_SIZE = 6000
 # each pixel is 3.38um
 SCALE = 3.38
 
+# Testing mode, stained variables, and magnification
+TEST = False
+STAINED = False
+MAGNIFICATION = '4X'
 
 def gradient_correction(img):
     # defining variables
@@ -83,8 +89,8 @@ def contour_finding(thresh_img, img, shortName, root):
 
     # subtract the two images to add the canny detected edges to contours
     thresh_img = cv2.add(thresh_img, edges)
-    cv2.imshow('thresh_img',thresh_img)
-    cv2.waitKey()
+    # cv2.imshow('thresh_img',thresh_img)
+    # cv2.waitKey()
 
     # produces the array of contours for the image
     contours, heirarchy = cv2.findContours(thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -137,12 +143,80 @@ def contour_finding(thresh_img, img, shortName, root):
 
     return (img, shape_count, avg_area, colonies)
 
+def analyzeImgStained(img, root, fileName, shortName):
+    # Shrink the image to a not-too-large, not-too-small size
+    s_img = cv2.resize(img, (RESIZE_X, RESIZE_Y))
+    print('Shrunk Image')
+
+    # when image is passed as a parameter, its referenced, so it will get altered in
+    # gradient_correction, so make a copy to retain the original shrunk image
+    s_img_cp = s_img.copy()
+
+    # Correct the background gradient to an even grey (127)
+    gc_img = gradient_correction(s_img_cp)
+    print('Corrected Gradient')
+
+    # Use contours to select the largest colonies & draw the contours on the QC image (s_img)
+    cont_img, count, avg_area, colonies = contour_finding(gc_img, s_img)
+    print('Colonies counted')
+
+    # producing the QC files filename with the proper path
+    QCFolder = os.path.join(root, 'QC')
+    QCFile = os.path.join(QCFolder, ('QC_' + shortName))
+
+    # Save image to QC folder for QC
+    cv2.imwrite(QCFile, cont_img)
+    print('Saved as %s' % (QCFile))
+    print('~')
+
+    # memory cleanup
+    del img
+    del gc_img
+    del s_img
+    del cont_img
+    gc.collect()
+    return (count, avg_area, colonies)
+
+def analyzeImgStained(img, root, fileName, shortName):
+    # Shrink the image to a not-too-large, not-too-small size
+    s_img = cv2.resize(img, (RESIZE_X, RESIZE_Y))
+    print('Shrunk Image')
+
+    # when image is passed as a parameter, its referenced, so it will get altered in
+    # gradient_correction, so make a copy to retain the original shrunk image
+    s_img_cp = s_img.copy()
+
+    # Correct the background gradient to an even grey (127)
+    gc_img = gradient_correction(s_img_cp)
+    print('Corrected Gradient')
+
+    # Use contours to select the largest colonies & draw the contours on the QC image (s_img)
+    cont_img, count, avg_area, colonies = contour_finding(gc_img, s_img)
+    print('Colonies counted')
+
+    # producing the QC files filename with the proper path
+    QCFolder = os.path.join(root, 'QC')
+    QCFile = os.path.join(QCFolder, ('QC_' + shortName))
+
+    # Save image to QC folder for QC
+    cv2.imwrite(QCFile, cont_img)
+    print('Saved as %s' % (QCFile))
+    print('~')
+
+    # memory cleanup
+    del img
+    del gc_img
+    del s_img
+    del cont_img
+    gc.collect()
+    return (count, avg_area, colonies)
 
 def analyzeImg(img, root, fileName, shortName):
     # Shrink the image to a not-too-large, not-too-small size
     s_img = cv2.resize(img, (RESIZE_X, RESIZE_Y))
     print('Shrunk Image')
-
+    # cv2.imshow('shrunk image', s_img)
+    # cv2.waitKey()
     # when image is passed as a parameter, its referenced, so it will get altered in
     # gradient_correction, so make a copy to retain the original shrunk image
     s_img_cp = s_img.copy()
@@ -160,7 +234,8 @@ def analyzeImg(img, root, fileName, shortName):
     closed = cv2.morphologyEx(gc_img, cv2.MORPH_CLOSE, kernel)
     dialated = cv2.dilate(closed, kernel, iterations=4)
     ###########################################################
-
+    #cv2.imshow('ProcessedImage', dialated)
+    #cv2.waitKey()
     # Use contours to select the largest colonies & draw the contours on the QC image (s_img)
     cont_img, count, avg_area, colonies = contour_finding(dialated, s_img, shortName, root)
     print('Colonies counted')
@@ -170,6 +245,8 @@ def analyzeImg(img, root, fileName, shortName):
     QCFile = os.path.join(QCFolder, ('QC_' + shortName))
 
     # Save image to QC folder for QC
+    # cv2.imshow('QC Image', cont_img)
+    # cv2.waitKey()
     cv2.imwrite(QCFile, cont_img)
     print('Saved as %s' % (QCFile))
     print('~')
@@ -225,6 +302,28 @@ def analyzeFolder(root, output):
 
 
 def main():
+    # get commandline arguments and respond
+    # args = sys.argv
+    # if sys.argv[1] == '-t':
+    #     TEST = True
+    # elif sys.argv[1] == '-h':
+    #     print("Soft Agar Colony Counter:\nOPTIONS:")
+    #     print("-t -------- Testing mode - will display thresholded and counted images")
+    #     print("-m -------- Magnification - 10X or 4X")
+    #     print("-s -------- Stained or unstained colonies - unstained counts will be noisier than stained")
+    #     print("-h -------- Help")
+    #     sys.exit()
+    parser = OptionParser()
+    parser.add_option('-t', '--testing',
+                      dest = "TEST", action = 'store_true', default = False,
+                      help='Testing mode will display the thresholded image, counted colonies, and final QC image for '
+                           'each sample')
+    parser.add_option('-m', '--magnification', dest = 'mag', default = '4x',
+                      help='Scope magnification - 4X or 10X. Default is 4X')
+    parser.add_option('-s', '--stained', dest = 'stain', action = 'store_true', default = False,
+                      help='Presence of Stain - staining yields more reliable numbers')
+    parser.print_help()
+    sys.exit()
     # generic variable determination
     root = os.path.abspath('.')
     containsJPG = False
