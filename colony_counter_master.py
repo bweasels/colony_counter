@@ -41,6 +41,7 @@ TEST = False
 STAINED = False
 MAGNIFICATION = '4X'
 
+
 def gradient_correction(img):
     # defining variables
     c_value = 128  # value to correct to to make a neutral image for QC
@@ -93,7 +94,7 @@ def contour_finding(thresh_img, img, shortName, root):
     # cv2.waitKey()
 
     # produces the array of contours for the image
-    contours, heirarchy = cv2.findContours(thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    img, contours, hierarchy = cv2.findContours(thresh_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     # initialize an empty list to hold the colony sizes
     colonies = [None] * len(contours)
@@ -141,7 +142,8 @@ def contour_finding(thresh_img, img, shortName, root):
     del thresh_img
     del contours
 
-    return (img, shape_count, avg_area, colonies)
+    return img, shape_count, avg_area, colonies
+
 
 def analyzeImgStained(img, root, fileName, shortName):
     # Shrink the image to a not-too-large, not-too-small size
@@ -177,6 +179,7 @@ def analyzeImgStained(img, root, fileName, shortName):
     gc.collect()
     return (count, avg_area, colonies)
 
+
 def analyzeImgStained(img, root, fileName, shortName):
     # Shrink the image to a not-too-large, not-too-small size
     s_img = cv2.resize(img, (RESIZE_X, RESIZE_Y))
@@ -210,6 +213,7 @@ def analyzeImgStained(img, root, fileName, shortName):
     del cont_img
     gc.collect()
     return (count, avg_area, colonies)
+
 
 def analyzeImg(img, root, fileName, shortName):
     # Shrink the image to a not-too-large, not-too-small size
@@ -234,8 +238,8 @@ def analyzeImg(img, root, fileName, shortName):
     closed = cv2.morphologyEx(gc_img, cv2.MORPH_CLOSE, kernel)
     dialated = cv2.dilate(closed, kernel, iterations=4)
     ###########################################################
-    #cv2.imshow('ProcessedImage', dialated)
-    #cv2.waitKey()
+    # cv2.imshow('ProcessedImage', dialated)
+    # cv2.waitKey()
     # Use contours to select the largest colonies & draw the contours on the QC image (s_img)
     cont_img, count, avg_area, colonies = contour_finding(dialated, s_img, shortName, root)
     print('Colonies counted')
@@ -313,17 +317,17 @@ def main():
     #     print("-s -------- Stained or unstained colonies - unstained counts will be noisier than stained")
     #     print("-h -------- Help")
     #     sys.exit()
-    parser = OptionParser()
-    parser.add_option('-t', '--testing',
-                      dest = "TEST", action = 'store_true', default = False,
-                      help='Testing mode will display the thresholded image, counted colonies, and final QC image for '
-                           'each sample')
-    parser.add_option('-m', '--magnification', dest = 'mag', default = '4x',
-                      help='Scope magnification - 4X or 10X. Default is 4X')
-    parser.add_option('-s', '--stained', dest = 'stain', action = 'store_true', default = False,
-                      help='Presence of Stain - staining yields more reliable numbers')
-    parser.print_help()
-    sys.exit()
+    # parser = OptionParser()
+    # parser.add_option('-t', '--testing',
+    #                  dest="TEST", action='store_true', default=False,
+    #                  help='Testing mode will display the thresholded image, counted colonies, and final QC image for '
+    #                       'each sample')
+    # parser.add_option('-m', '--magnification', dest='mag', default='4x',
+    #                  help='Scope magnification - 4X or 10X. Default is 4X')
+    # parser.add_option('-s', '--stained', dest='stain', action='store_true', default=False,
+    #                  help='Presence of Stain - staining yields more reliable numbers')
+    # parser.print_help()
+    # sys.exit()
     # generic variable determination
     root = os.path.abspath('.')
     containsJPG = False
