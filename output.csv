@@ -1,6 +1,0 @@
-The threshold for significance (percentage darker a colony has to be to be distinct from background) is: 40.0
-The gradient map resolution multiplier is: 0.03
-This will produce a 45.0 by 30.0 pixel gradient map.
-Colonies smaller than 6000 um^2 are rejected as unviable or erroneous
-------------------------------------------------------------------
-C:\Users\benku\Documents\colony_counter\b1\ShB10: 
