@@ -2,7 +2,7 @@
 This program quantifies the colones grown in a 3D agar matrix from a greyscale image, by recurising through directories with images.
 It outputs both the number of colonies in each image as well as its cross sectional area in a .csv. In addition it makes a smaller quality control image to visually verify performance
 
-Since this program is much older than the beta-gal counter, you have to fine tune performance via the global variables in the top of the script itself
+Since this program is much older than the [beta-gal counter](https://github.com/bweasels/betaGalCounter "BetaGal Stained Cell Counter"), you have to fine tune performance via the global variables in the top of the script itself
 
 # Parameters  
 *-m --magnification:* Microscope magnification - 4x or 10x. Default is 4x  
